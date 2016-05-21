@@ -1,0 +1,24 @@
+cd "C:\Users\haupt_000\Desktop\Erlang Labs\ErlangLab4-TicTacToe"
+werl -sname server -setcookie class1 
+werl -sname client1 -setcookie class1 
+werl -sname client2 -setcookie class1
+
+
+cd("C:/Users/haupt_000/Desktop/Erlang Labs/ErlangLab4-TicTacToe").
+c(ttt).
+Room = spawn(ttt, loop_room, [1, ttt:zero_list(25), 5, 3]).
+Room ! {game_field}.
+Room ! {turn, 1, 3, 3}.
+
+
+net_adm:ping('client1@Folade-Laptop').
+net_adm:ping('client2@Folade-Laptop').
+ttt:start_server().
+
+P1 = ttt:new_player().
+ttt:start_game(P1).
+
+P2 = ttt:new_player().
+ttt:start_game(P2).
+
+ttt:make_turn(P1, 1, 1).
