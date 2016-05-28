@@ -8,7 +8,9 @@
 
 % Запуск сервера
 start_server() ->
-    gen_server:start_link({global, game_server}, ?MODULE, [], []).
+    ServerPID = gen_server:start_link({global, game_server}, ?MODULE, [], []),
+    io:format("!!! Server started~n"),
+    ServerPID.
 
 % Окончание игры    
 end_game(RoomID) ->
