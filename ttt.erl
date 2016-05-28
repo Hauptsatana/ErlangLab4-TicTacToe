@@ -22,7 +22,16 @@ take_elems(List, Start, Delta, Finish) ->
 zero_list(N) ->
     if  (N < 1) -> [];
         true -> [0 | zero_list(N - 1)]
-    end.    
+    end.   
+% Игрок в данный момент участвует в игре. Возвращает false или PID комнаты 
+active_player(PlayerPID, Rooms) ->
+    case lists:filter(
+            fun({_, Player1, Player2}) -> 
+                ((Player1 =:= PlayerPID) and (Player2 =/= null)) or (Player2 =:= PlayerPID) end, 
+            Rooms) of
+        [] -> false;
+        [{Room, _, _} | _] -> Room
+    end. 
 
 % Распечатка игрового поля
 print_field(Field, Dimension) -> print_field(Field, Dimension, Dimension).
@@ -110,7 +119,7 @@ make_turn(PlayerPID, Row, Column) -> PlayerPID ! {turn, Row, Column}.
 
 % Запуск игрового сервера
 start_server() ->
-    global:register_name(game_server, spawn(?MODULE, loop_server, [[], false])).  
+    global:register_name(game_server, spawn(?MODULE, loop_server, [[], true])).  
 
 % Цикл работы сервера
 loop_server(Rooms, Debug) ->
@@ -138,7 +147,6 @@ loop_server(Rooms, Debug) ->
                             Player1 ! {second_player_joined},
                             PlayerPID ! {room_found},
                             NewRooms = lists:keyreplace(Room, 1, Rooms, {Room, Player1, PlayerPID}),
-                            io:format("P1 = ~w, P2 = ~w.~n", [Player1, PlayerPID]),
                             Room ! {connect}
                     end;
                 [_| _] -> 
@@ -148,13 +156,12 @@ loop_server(Rooms, Debug) ->
             end;
         % Запрос состояния игрового поля
         {game_field, PlayerPID} -> 
-            RoomState = lists:filter(fun({_, Player1, Player2}) -> (Player1 =:= PlayerPID) or (Player2 =:= PlayerPID) or (Player2 =:= null) end, Rooms),
-            case RoomState of
+            case active_player(PlayerPID, Rooms) of
                 % Игрок находится вне комнаты
-                [] -> 
+                false -> 
                     PlayerPID ! {no_room};
                 % Комната найдена
-                [{Room, _, _} | _] ->
+                Room ->
                     Room ! {game_field},
                     receive
                         {Field, Dimension} -> PlayerPID ! {Field, Dimension}
